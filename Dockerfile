@@ -4,11 +4,13 @@ FROM node:18-alpine
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if available)
+# Copy package files
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --omit=dev && npm cache clean --force
+# Use npm install for better compatibility with older lockfile versions
+RUN npm install --only=production && \
+    npm cache clean --force
 
 # Copy the rest of the application code
 COPY . .
