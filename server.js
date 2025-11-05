@@ -1,3 +1,15 @@
+// Polyfill for global File if not available (Node.js compatibility)
+if (typeof global.File === 'undefined') {
+  global.File = class File {
+    constructor(fileBits, fileName, options = {}) {
+      this.name = fileName;
+      this.size = 0;
+      this.type = options.type || '';
+      this.lastModified = Date.now();
+    }
+  };
+}
+
 const express = require('express');
 const cors = require('cors');
 const SnapTikClient = require('./src/index');
