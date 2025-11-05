@@ -1,42 +1,30 @@
-# Use the official Node.js runtime as the base image
+# Alternative Dockerfile for Railway (simpler approach)
 FROM node:18-alpine
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
-
-# Set the working directory inside the container
+# Set working directory
 WORKDIR /app
 
-# Create a non-root user first
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+# Copy all files
+COPY . .
 
-# Copy package files
-COPY --chown=nodejs:nodejs package*.json ./
-
-# Switch to nodejs user for npm install
-USER nodejs
-
-# Install dependencies
-# Using npm install for compatibility with older lockfile versions
-RUN npm install --only=production && \
+# Install all dependencies (including dev dependencies first, then remove them)
+RUN npm install && \
+    npm prune --production && \
     npm cache clean --force
 
-# Copy the rest of the application code
-COPY --chown=nodejs:nodejs . .
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001 && \
+    chown -R nextjs:nodejs /app
 
-# Expose the port that the app runs on
+USER nextjs
+
+# Expose port
 EXPOSE 3000
 
-# Set environment variables
-ENV NODE_ENV=production \
-    PORT=3000 \
-    NPM_CONFIG_LOGLEVEL=warn
+# Environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
-
-# Start the application with dumb-init for proper signal handling
-ENTRYPOINT ["dumb-init", "--"]
+# Start the application
 CMD ["npm", "start"]
